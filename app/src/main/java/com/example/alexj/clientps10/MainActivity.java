@@ -1,108 +1,140 @@
 package com.example.alexj.clientps10;
 
+import android.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import java.io.IOException;
-import java.util.Random;
 
-import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
 
-public class MainActivity extends AppCompatActivity {
+import static com.example.alexj.clientps10.ConstantsKey.ACTION_ANSWER;
+import static com.example.alexj.clientps10.ConstantsKey.ANSWER_KEY;
+
+public class MainActivity extends AppCompatActivity  {
 
 
-    Client client;
     String ip = "192.168.1.105";
     int port = 10001;
 
-    BroadcastReceiver receiver;
-    String answer;
+    BroadcastReceiver commandReceiver;
+    Client thread;
+    FragmentTransaction transaction;
+
+    private FrameLayout dynamicContainer = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        commandReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                intent.getBundleExtra("");
+                switch (intent.getStringExtra(ConstantsKey.COMMAND_TYPE))
+                {
+                    case (ConstantsKey.Restart_KEY):
+                        ip = intent.getStringExtra(ConstantsKey.IP_KEY);
+                        port = intent.getIntExtra(ConstantsKey.PORT_KEY, 10001);
+                        thread = new Client(getApplicationContext(), ip, port);
+                        if  (thread.Connect()){
+                            Toast.makeText(getApplicationContext(), "Подключение установлено", Toast.LENGTH_LONG).show();
+                        }
+                        else{
+                            Toast.makeText(getApplicationContext(), "Подключение не установлено", Toast.LENGTH_LONG).show();
+                        }
+                        break;
+                    case (ConstantsKey.Send_KEY):
+                        String command = intent.getStringExtra(ConstantsKey.Command);
+                        try {
+                            thread.SendCommand(command);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } catch (ExecutionException e) {
+                            e.printStackTrace();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                }
+            }
+        };
+
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
 
     @Override
     protected void onStop() {
-        unregisterReceiver(receiver);
+        unregisterReceiver(commandReceiver);
         super.onStop();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                answer = intent.getStringExtra(Client.ANSWER_KEY);
-                Toast.makeText(getApplicationContext(), answer, Toast.LENGTH_LONG).show();
-            }
-        };
 
-        IntentFilter updateIntentFilter = new IntentFilter(Client.ACTION_ANSWER);
-        registerReceiver(receiver, updateIntentFilter);
+        //Передает комманды от фрагментов потоку сокета
+        IntentFilter sendIntentFilter = new IntentFilter(ConstantsKey.ACTION_SEND);
+        registerReceiver(commandReceiver, sendIntentFilter);
 
-
-        try {
-
-            client = new Client(ip, port, getApplicationContext());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-        ((Button) findViewById(R.id.button_send)).setOnClickListener(new View.OnClickListener() {
+        //Фрагмент с настройками порта и ip
+        findViewById(R.id.button_settings).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Random random = new Random();
-                String hexColor = "#FFFFFFFF";
-                Command command = new Command(ConstantsKey.Color, hexColor);
+                transaction = getFragmentManager().beginTransaction();
+                transaction.replace(R.id.dynamics_tool_frame, new FragmentSettings());
+                transaction.commit();
+            }
+        });
 
+        findViewById(R.id.button_send).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
                 try {
-                    client.SendCommand(command);
-                    Toast.makeText(getApplicationContext(), command.toString(), Toast.LENGTH_LONG).show();
-                } catch (InterruptedException e) {
+                    thread.SendCommand("Color#FFFFFFFF");
+                } catch (IOException e) {
                     e.printStackTrace();
                 } catch (ExecutionException e) {
                     e.printStackTrace();
-                } catch (IOException e) {
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
         });
 
-        findViewById(R.id.button_connect).
-
+        //Фрагмет Color Piker
+        findViewById(R.id.button_color).
                 setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        //client.StartReceive();
-                        try {
-                            client.Connect();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                       /*
+                        String serverColor = "#F02F6DA3";
+                        int color = android.graphics.Color.parseColor(serverColor);
+                        SimpleColorWheelDialog.build()
+                                .color(color)
+                                .alpha(true)
+                                .show(activity, SimpleColorWheelDialog.TAG);
+                                */
 
+                      transaction = getFragmentManager().beginTransaction();
+                      transaction.replace(R.id.dynamics_tool_frame, new FragmentColorWheel());
+                      transaction.commit();
                     }
                 });
+
     }
+
+
+
 }
 
 

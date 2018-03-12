@@ -1,15 +1,18 @@
 package com.example.alexj.clientps10;
 
+import android.app.Fragment;
+
 /**
  * Created by alexj on 26.02.2018.
  */
 
-public class Command {
+public class Command  {
     String ParamType;
     String Value;
 
+
     Command(String tool , String value){
-        ParamType =String.valueOf(tool);
+        ParamType = String.valueOf(tool);
         Value = String.valueOf(value);
     }
 

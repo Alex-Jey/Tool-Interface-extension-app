@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Client PS/10</string>
+
+    <string name="hex" translatable="false">HEX:</string>
+    <string name="transparency">Transparency</string>
+    <string name="hardness">Hardness</string>
+    <string name="rrggbb" translatable="false">RRGGBB</string>
+
+    <string name="ip_title">IP адрес сервера</string>
+    <string name="port_title">Порт сервера</string>
 </resources>
